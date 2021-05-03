@@ -1,0 +1,101 @@
+package main
+
+// 第25章 单元实验
+// ========================================================================================
+// 创建3种动物，cat dog pig，且每种动物实现Stringer接口返回名字
+// 每种动物拥有move方法和eat方法，前者用于返回动物行动描述，后者用于返回动物喜欢的某种食物名
+// 模拟72小时的火星日，且日出活动，日落睡觉，每过1小时随机打印一个动物的随机动作，且打印出在做什么
+// 使用结构和接口
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+type action interface {
+	move() string
+	eat() string
+}
+
+type Animal string
+
+type cat struct {
+	name string
+	Animal
+}
+
+type dog struct {
+	name string
+	Animal
+}
+
+type pig struct {
+	name string
+	Animal
+}
+
+const hours int = 18
+
+// 定义函数，用于打印每小时动物行为（move或eat），且72小时一半白天一半夜晚，白天有行为，晚上睡觉
+func printAction(action action) {
+	ran := rand.Intn(2)
+	if ran == 0 {
+		fmt.Println(action.move())
+	} else {
+		fmt.Println(action.eat())
+	}
+}
+
+// 定义Animal类型的String()方法，并且实现cat, dog, pig类的该方法的自动转发
+func (a Animal) String() string {
+	return fmt.Sprintf("The animal is " + string(a))
+}
+
+// 定义Animal类型的move方法，并且实现cat, dog, pig类的该方法的自动转发
+func (a Animal) move() string {
+	actions := []string{"playing", "running", "stupefying"}
+	ran := rand.Intn(3)
+	return fmt.Sprintf("The %v is %v.", string(a), actions[ran])
+}
+
+// 定义Animal类型的eat方法，并且实现cat, dog, pig类的该方法的自动转发
+func (a Animal) eat() string {
+	food := []string{"apple", "banana", "orange", "peer"}
+	ran := rand.Intn(4)
+	return fmt.Sprintf("The %v is eatting %v", string(a), food[ran])
+}
+
+func main() {
+
+	for i := 1; i <= hours; i++ {
+		fmt.Println("It's", i, "o'clock")
+		// 生成动物列表，并随机返回
+		animals := []string{"cat", "dog", "pig"}
+		ran1 := rand.Intn(100) % 3
+
+		// 判断当前时间i是否大于36小时，小于则是白天，随机选择行动并打印
+		if i <= hours/2 {
+			switch animals[ran1] {
+			case "cat":
+				myAnimal := cat{name: "myCat", Animal: "cat"}
+				fmt.Println("the", myAnimal, "named", myAnimal.name)
+				printAction(myAnimal)
+			case "dog":
+				myAnimal := dog{name: "myDog", Animal: "dog"}
+				fmt.Println("the", myAnimal, "named", myAnimal.name)
+				printAction(myAnimal)
+			case "pig":
+				myAnimal := pig{name: "myPig", Animal: "pig"}
+				fmt.Println("the", myAnimal, "named", myAnimal.name)
+				printAction(myAnimal)
+			}
+		} else {
+			fmt.Println(animals[ran1], "is sleeping.")
+		}
+		if i == hours {
+			i = 0
+		}
+		fmt.Println()
+		time.Sleep(time.Duration(2) * time.Second)
+	}
+}

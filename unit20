@@ -1,0 +1,140 @@
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+const width = 80
+const height = 15
+
+type Universe [][]bool // []string代表元素为string类型的切片，则[][]bool代表元素为[]bool切片的切片
+type UniverseForPrint [][]string
+
+// 该函数用于生成长80，宽15的基础二维细胞网格
+func NewUniverse() Universe {
+
+	universe := make(Universe, height) //生成Universe类型的切片
+	for everyHeight := range universe {
+		universe[everyHeight] = make([]bool, width)
+	}
+	return universe
+}
+
+// 该方法用于打印细胞网络当前状态，活细胞用*，死细胞用
+func (universe Universe) printCeilBaseNet() {
+
+	ceilBaseNetStr := make(UniverseForPrint, len(universe)) // 新生成ceilBaseNet切片并初始化为15行，用于将NewUniverse()函数的[]bool切片转换为[]string切片
+
+	for everyHeight := range universe {
+		// 遍历每行中的每个元素，如果为true，则赋值为*，如果为false，则赋值为“ ”
+		ceilBaseNetStr[everyHeight] = make([]string, width) //初始化每行共有几列
+		for live := range universe[everyHeight] {
+			if universe[everyHeight][live] {
+				ceilBaseNetStr[everyHeight][live] = "*"
+			} else {
+				ceilBaseNetStr[everyHeight][live] = " "
+			}
+		}
+	}
+	for everyHeight := range ceilBaseNetStr {
+		fmt.Println(ceilBaseNetStr[everyHeight])
+	}
+}
+
+// 该方法用于任意激活细胞初始网络中的1/4的细胞，将这些细胞的false改为true
+func (universe Universe) activate() {
+
+	for everyHeight := range universe {
+
+		for everyCeil := range universe[everyHeight] {
+			randomNum := rand.Intn(100) % 4
+			// fmt.Println(randomNum)
+			if randomNum == 0 {
+				universe[everyHeight][everyCeil] = true
+			}
+		}
+	}
+}
+
+// 该方法用于判断某个细胞的存活情况,并实现细胞网格回环，保证每个细胞周围均有8个细胞
+func (universe Universe) alive(x, y int) bool {
+	if x < 0 {
+		x += width
+	} else if x > width-1 {
+		x %= width
+	}
+	if y < 0 {
+		y += height
+	} else if y > height-1 {
+		y %= height
+	}
+	return universe[y][x]
+}
+
+// 该方法用于判断某个细胞周围的8个细胞的存活数量，然后返回0~8，不包括该细胞本身
+func (universe Universe) neighbors(x, y int) int {
+	var neighborsAliveNum int
+	for neighborsX := x - 1; neighborsX <= x+1; neighborsX++ {
+		for neighborsY := y - 1; neighborsY <= y+1; neighborsY++ {
+			if universe.alive(neighborsX, neighborsY) {
+				neighborsAliveNum++
+			}
+		}
+	}
+	if universe.alive(x, y) {
+		neighborsAliveNum--
+		return neighborsAliveNum
+	} else {
+		return neighborsAliveNum
+	}
+}
+
+// 该方法用于表示位于某一坐标的细胞的下一代的存活情况，规则为
+// (1)当前细胞为死亡状态时，当周围有3个存活细胞时，则迭代后该细胞变成存活状态(模拟繁殖)；若原先为生，则保持不变。
+// (2)当前细胞为存活状态时，当周围的邻居细胞低于两个(不包含两个)存活时，该细胞变成死亡状态(模拟生命数量稀少)。
+// (3)当前细胞为存活状态时，当周围有两个或3个存活细胞时，该细胞保持原样。
+// (4)当前细胞为存活状态时，当周围有3个以上的存活细胞时，该细胞变成死亡状态(模拟生命数量过多)。
+func (universe Universe) next(x, y int) bool {
+	neighborAlivesNum := universe.neighbors(x, y)
+	if universe.alive(x, y) { // 判断是否存活
+		if neighborAlivesNum < 2 || neighborAlivesNum > 3 { //周围细胞存活数低于2
+			universe[y][x] = false
+		} else if neighborAlivesNum == 2 || neighborAlivesNum == 3 {
+			universe[y][x] = true
+		}
+	} else { // 该细胞为死亡状态
+		if neighborAlivesNum == 3 {
+			universe[y][x] = true
+		}
+	}
+	return universe[y][x]
+}
+
+func step(a, b Universe) {
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			b[y][x] = a.next(x, y)
+		}
+	}
+	b.printCeilBaseNet()
+}
+
+func main() {
+	ceilBaseNet := NewUniverse()   // 初始化细胞基础网格
+	ceilBaseNet.activate()         // 调用activate()方法，在初始细胞基础网格上随机生成1/4的细胞
+	ceilBaseNet.printCeilBaseNet() // 打印生成细胞后的细胞网格示意图
+	// fmt.Println(ceilBaseNet.next(79, 2))
+	// fmt.Println(ceilBaseNet.next(77, 8))
+
+	for {
+		ceilNextNet := NewUniverse()				
+		fmt.Println(
+		"\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c\x0c"
+		)
+		step(ceilBaseNet, ceilNextNet)
+		time.Sleep(time.Duration(5) * time.Second)
+		ceilBaseNet = ceilNextNet
+	}
+}
